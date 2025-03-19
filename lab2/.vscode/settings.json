@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "fstream": "c",
+        "random": "c",
+        "stdio.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c"
+    }
+}
