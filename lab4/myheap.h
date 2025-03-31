@@ -1,4 +1,4 @@
-#define SHRINK_RATIO 10
+#define SHRINK_RATIO 40
 #include "eyebot.h"
 
 // Min-heap for priority queue (A* open list)

@@ -3,6 +3,12 @@
         "*.tcc": "c",
         "myheap.h": "c",
         "array": "c",
-        "string_view": "c"
+        "string_view": "c",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "queue": "cpp",
+        "utility": "cpp",
+        "image.h": "c",
+        "stdio.h": "c"
     }
 }
