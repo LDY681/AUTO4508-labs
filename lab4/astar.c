@@ -5,8 +5,8 @@
 #include <stdlib.h>
 
 char *FILENAME = "nodes.txt";
-#define MAX_NODES 999
-#define LINE_SIZE 999
+#define MAX_NODES 9999
+#define LINE_SIZE 9999
 #define POSITION_OFFSET 0
 #define MATH_INF 99999999
 
