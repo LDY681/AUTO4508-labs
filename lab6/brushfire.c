@@ -1,5 +1,3 @@
-/* brushfire.c - Full with No Path Reduction (Preserve Connectivity) */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,9 +8,7 @@
 #define IMAGE_SIZE 128
 #define WORLD_SIZE 4000
 #define MAX_QUEUE_SIZE (IMAGE_SIZE * IMAGE_SIZE)
-#define DRIVE_SPEED 300
-#define INF 1000000
-#define NODE_FILE "nodes.txt"
+#define INF 99999
 #define SAFE_MARGIN 8
 
 /* Types and directions */
@@ -24,8 +20,8 @@ const int dirX[4] = {-1, 0, 1, 0};
 const int dirY[4] = {0, 1, 0, -1};
 const int dir8X[8] = {-1, 0, 1, 0, -1, -1, 1, 1};
 const int dir8Y[8] = {0, 1, 0, -1, -1, 1, -1, 1};
-const double cost[8] = {1.0, 1.0, 1.0, 1.0, 1.414, 1.414, 1.414, 1.414};
-const int colors[] = {RED, GREEN, BLUE, YELLOW, CYAN, TEAL, MAGENTA, PURPLE, MAROON, ORANGE, OLIVE};
+const double cost[8] = {1.0, 1.0, 1.0, 1.0, Math.sqrt(2), Math.sqrt(2), Math.sqrt(2), Math.sqrt(2)};
+const int colors[] = {RED, GREEN, BLUE, WHITE, GRAY, BLACK, ORANGE, SILVER, LIGHTGRAY, DARKGRAY, NAVY, CYAN, TEAL, MAGENTA, PURPLE, MAROON, YELLOW, OLIVE};
 
 Point queue[MAX_QUEUE_SIZE];
 int front = 0, rear = 0;
@@ -47,7 +43,7 @@ void label_obstacles(BYTE* image, int label[IMAGE_SIZE][IMAGE_SIZE], int* next_i
     for (int i = 0; i < IMAGE_SIZE; i++) {
         for (int j = 0; j < IMAGE_SIZE; j++) {
             if (i == 0 || j == 0 || i == IMAGE_SIZE-1 || j == IMAGE_SIZE-1) {
-                image[i * IMAGE_SIZE + j] = 1;   // still mark in image
+                image[i * IMAGE_SIZE + j] = 1;   // still mark 1 in image
                 label[i][j] = -1;                // wall gets -1
             }
         }
@@ -169,9 +165,6 @@ void brushfire_voronoi(BYTE* image, int label[IMAGE_SIZE][IMAGE_SIZE], int voron
         int i = corners[c][0];
         int j = corners[c][1];
         while (i >= 0 && i < IMAGE_SIZE && j >= 0 && j < IMAGE_SIZE) {
-            if (c == 1) {
-                printf("i: %d, j: %d, v: %d\n", i, j, voronoi[i][j]);
-            }
             if (voronoi[i][j] == 2 || (voronoi[i][j] == 1 && (i == 1 || j == 1 || i == IMAGE_SIZE -2 || j == IMAGE_SIZE -2))) break;
             if ((voronoi[i][j] == 0 || voronoi[i][j] == 1) && image[i * IMAGE_SIZE + j] == 0) {
                 voronoi[i][j] = 2;
@@ -183,7 +176,7 @@ void brushfire_voronoi(BYTE* image, int label[IMAGE_SIZE][IMAGE_SIZE], int voron
 }
 
 void draw_and_export_voronoi(int voronoi[IMAGE_SIZE][IMAGE_SIZE]) {
-    FILE *file = fopen(NODE_FILE, "w");
+    FILE *file = fopen("nodes.txt", "w");
     if (!file) {
         LCDPrintf("Failed to open nodes.txt\n");
         return;
@@ -274,6 +267,7 @@ int main(int argc, char* argv[]) {
                 LCDImage(color_img);
                 break;
             case KEY3:
+                // Draw on top of KEY 2 image
                 draw_and_export_voronoi(voronoi);
                 break;
             case KEY4:
