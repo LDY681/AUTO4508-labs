@@ -1,64 +1,59 @@
-#include "eyebot.h"
 #include <math.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
-#define LCD_WIDTH 320
-#define LCD_HEIGHT 240
-#define SCALE 0.05f             // 1 mm = 0.05 LCD pixel
+#include "eyebot.h"
+
+#define WORLD_SIZE 2000
+#define SCALE 0.1f
+#define LCD_WIDTH 200
+#define LCD_HEIGHT 200
+
 #define LIDAR_POINTS 360
 #define LIDAR_RANGE 360
 
-#define FORWARD_SPEED 100       // mm/s
-#define TURN_SPEED  100         // deg/s
-#define SAFE_DISTANCE 300       // mm, threshold for obstacle detection
+#define FORWARD_SPEED 100
+#define TURN_SPEED 100
+#define SAFE_DISTANCE 200
 
 #define DEG_TO_RAD (M_PI / 180.0f)
-
-// Store initial robot pose to fix the LCD origin in world space
-int origin_x, origin_y, origin_phi;
+#define SIM_ORIGIN_X 400
+#define SIM_ORIGIN_Y 400
 
 void draw_map(int *distances) {
-    int robot_x, robot_y, robot_phi;
-    VWGetPosition(&robot_x, &robot_y, &robot_phi);
-    float robot_heading = (robot_phi - origin_phi) * DEG_TO_RAD;
+    // LCDClear();
+    int rel_x, rel_y, rel_phi;
+    VWGetPosition(&rel_x, &rel_y, &rel_phi);
 
-    for (int i = 0; i < LIDAR_POINTS; i += 2) { // Reduce density for performance
+    // Compute absolute position in sim world
+    int robot_x = SIM_ORIGIN_X + rel_x;
+    int robot_y = SIM_ORIGIN_Y + rel_y;
+    float robot_heading = rel_phi * DEG_TO_RAD;
+
+    int robot_px = (int)(robot_x * SCALE);
+    int robot_py = LCD_HEIGHT - (int)(robot_y * SCALE);
+
+    for (int i = 0; i < LIDAR_POINTS; i += 1) {  // Reduce density for performance
         int d = distances[i];
-        if (d <= 0 || d > 3000) continue; // skip invalid or too far points
+        printf("Distance[%d]: %d\n", i, d);
+        if (d <= 0 || d > 3000) continue;  // skip invalid or too far points
 
-        float angle = robot_heading + i * DEG_TO_RAD;
+        float lidar_angle = (i - 180) * DEG_TO_RAD;
+        float angle = robot_heading - lidar_angle;
+        printf("Angle: %f\n", angle);
+        // float angle = robot_heading + i * DEG_TO_RAD;
         float wx = robot_x + d * cosf(angle);
         float wy = robot_y + d * sinf(angle);
 
-        int lcd_x = (int)((wx - origin_x) * SCALE);
-        int lcd_y = (int)((wy - origin_y) * SCALE);
+        int lcd_x = (int)(wx * SCALE);
+        int lcd_y = LCD_HEIGHT - (int)(wy * SCALE);
 
-        // Flip y-axis for LCD coordinate system
-        lcd_y = LCD_HEIGHT - lcd_y;
-
-        if (lcd_x >= 0 && lcd_x < LCD_WIDTH && lcd_y >= 0 && lcd_y < LCD_HEIGHT) {
-            LCDPixel(lcd_x, lcd_y, WHITE);
-        }
+        LCDLine(robot_px, robot_py, lcd_x, lcd_y, WHITE);
     }
 }
 
-int front_blocked(int *distances) {
-    for (int i = 170; i <= 190; i++) {
-        if (distances[i] > 0 && distances[i] < SAFE_DISTANCE)
-            return 1;
-    }
-    return 0;
-}
-
-int main() {
-    LCDClear();
-    LCDMenu("START", "", "", "END");
-    VWGetPosition(&origin_x, &origin_y, &origin_phi);
-
-    KEYWait(KEY1);
-
+void explore() {
     int dists[LIDAR_POINTS];
 
     while (1) {
@@ -69,17 +64,50 @@ int main() {
         LIDARGet(dists);
         draw_map(dists);
 
-        if (front_blocked(dists)) {
+        int turn_angle = 0;
+        if (dists[180] < SAFE_DISTANCE) {
             VWSetSpeed(0, 0);
-            int turn_angle = 180 + (rand() % 180); // turn between 180-360
+            turn_angle = 220 + (rand() % 100);  // turn around
             VWTurn(turn_angle, TURN_SPEED);
             VWWait();
+        } else if (dists[90] < SAFE_DISTANCE) {  // Left side blocked
+            VWSetSpeed(0, 0);
+            turn_angle = 70 + (rand() % 40);  // turn around
+            VWTurn(-turn_angle, TURN_SPEED);  // Turn right
+            VWWait();
+        } else if (dists[270] < SAFE_DISTANCE) {  // Right side blocked
+            VWSetSpeed(0, 0);
+            turn_angle = 70 + (rand() % 40);  // turn around
+            VWTurn(turn_angle, TURN_SPEED);  // Turn left
+            VWWait();
         } else {
-            int rand_angle = (rand() % 60) - 30; // -30 to 30 deg/s
+            int rand_angle = (rand() % 60) - 30;  // -30 to 30 deg/s
             VWSetSpeed(FORWARD_SPEED, rand_angle);
         }
     }
+}
 
-    VWSetSpeed(0, 0);
-    return 0;
+int main() {
+    LCDClear();
+    LCDMenu("SET", "START", "TEST", "END");
+
+    int lcd_width = 320;
+    int lcd_height = 240;
+    double scale = lcd_width / WORLD_SIZE;
+
+    while (1) {
+        int key = KEYRead();
+        if (key == KEY1) {
+            SIMSetRobot(0, SIM_ORIGIN_X, SIM_ORIGIN_Y, 0, 0);
+            VWSetPosition(0, 0, 0);
+        } else if (key == KEY2) {
+            explore();
+        } else if (key == KEY3) {
+            LCDCircle(100, 100, 5, RED, 1);
+            LCDCircle(200, 200, 5, GREEN, 1);
+            LCDGetSize(&lcd_width, &lcd_height);
+            scale = (lcd_width > lcd_height ? lcd_width : lcd_height) / WORLD_SIZE;
+            LCDSetPrintf(0, 0, "Width: %d Height: %d Scale: %d\n", lcd_width, lcd_height, scale);
+        }
+    }
 }
