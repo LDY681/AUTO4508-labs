@@ -13,20 +13,21 @@ from pygame.locals import *
 FRAME_RATE = 20
 
 # Manual control
-max_speed = 500
-min_speed = -200
+max_speed = 100
+min_speed = 0
 speed = 0
 speed_increment = 20
 
-max_steer = 30
-min_steer = -30
+max_steer = 90
+min_steer = -90
 steering_angle = 0
-steer_increment = 3
+steer_increment = 20
 
 # Image recording
 Image_Count = 0
 Record_Button = 0
 Recording_Data = False
+
 New_Image_Save_Path = ""
 
 Script_Path = os.path.dirname(os.path.abspath(__file__))
