@@ -30,7 +30,7 @@ if exists(Image_Path):
             Search_Folder = join(Image_Path, Folders)
             for Files in os.listdir(Search_Folder):
                 Speed=int(Files.split("_")[3])
-                Steering_Angle=int(Files.split("_")[4])
+                Steering_Angle = int(Files.split("_")[4].split(".")[0]) # Discard image extension
                 Image=cv2.imread(join(Search_Folder, Files))
                 #print(Image.shape)
                 Images_All.append(Image)
