@@ -13,10 +13,18 @@ import ctypes
 Model_Name="PilotNet_2022-05-02-17.25.02"
 
 def Image_Processing(image):
-    #TO DO
-    #Output image shape: (200,66,3)
-    #TO DO
-    return image
+    # First cast raw pointer to POINTER of correct type
+    ptr_type = ctypes.POINTER(ctypes.c_uint8 * (240 * 320 * 3))
+    image_ptr = ctypes.cast(image, ptr_type)
+    
+    # Now convert to NumPy array and reshape
+    np_img = np.frombuffer(image_ptr.contents, dtype=np.uint8)
+    np_img = np_img.reshape((240, 320, 3))
+    
+    # Crop and resize
+    cropped = np_img[120:240, :, :]  # Bottom half
+    resized = cv2.resize(cropped, (200, 66))
+    return resized
 
 def PilotNet_Drive(model):
     img=CAMGet()
