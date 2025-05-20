@@ -18,10 +18,10 @@ min_speed = 0
 speed = 0
 speed_increment = 20
 
-max_steer = 30
-min_steer = -30
+max_steer = 20
+min_steer = -20
 steering_angle = 0
-steer_increment = 3
+steer_increment = 2
 
 # Image recording
 Image_Count = 0
