@@ -13,15 +13,15 @@ from pygame.locals import *
 FRAME_RATE = 20
 
 # Manual control
-max_speed = 100
+max_speed = 200
 min_speed = 0
 speed = 0
 speed_increment = 20
 
-max_steer = 90
-min_steer = -90
+max_steer = 30
+min_steer = -30
 steering_angle = 0
-steer_increment = 20
+steer_increment = 3
 
 # Image recording
 Image_Count = 0
@@ -35,9 +35,17 @@ Image_Path = os.path.join(Script_Path, 'ImageDatasets')
 
 # ================== Image Preprocessing ====================
 def Image_Processing(image):
-    # image: shape (240, 320, 3)
-    cropped = image[120:240, :, :]        # Bottom half
-    resized = cv2.resize(cropped, (200, 66))  # Resize to (200, 66)
+    # First cast raw pointer to POINTER of correct type
+    ptr_type = ctypes.POINTER(ctypes.c_uint8 * (240 * 320 * 3))
+    image_ptr = ctypes.cast(image, ptr_type)
+    
+    # Now convert to NumPy array and reshape
+    np_img = np.frombuffer(image_ptr.contents, dtype=np.uint8)
+    np_img = np_img.reshape((240, 320, 3))
+    
+    # Crop and resize
+    cropped = np_img[120:240, :, :]  # Bottom half
+    resized = cv2.resize(cropped, (200, 66))
     return resized
 
 # ================== Manual Control Loop ====================
@@ -61,9 +69,9 @@ def Manual_Control():
             now = datetime.datetime.now().strftime("%Y-%m-%d-%H.%M.%S")
             New_Image_Save_Path = os.path.join(Image_Path, f"Manual_Image_{now}")
             os.makedirs(New_Image_Save_Path, exist_ok=True)
-            LCDSetPrintf(16, 0, "Recording Started: %s", New_Image_Save_Path)
+            print(f"Recording Started: %s", New_Image_Save_Path)
         else:
-            LCDSetPrintf(16, 0, "Recording Stopped")
+            print(f"Recording Stopped")
 
     # Keyboard control
     if keys[K_w] or keys[K_UP]:
@@ -73,9 +81,9 @@ def Manual_Control():
     else:
         speed *= 0.9  # gradually slow down
 
-    if keys[K_a] or keys[K_LEFT]:
+    if keys[K_d] or keys[K_RIGHT]:
         steering_angle = max(steering_angle - steer_increment, min_steer)
-    elif keys[K_d] or keys[K_RIGHT]:
+    elif keys[K_a] or keys[K_LEFT]:
         steering_angle = min(steering_angle + steer_increment, max_steer)
     else:
         steering_angle *= 0.8  # center steering slowly
@@ -84,6 +92,7 @@ def Manual_Control():
 
     if Recording_Data:
         filename = f"Manual_Image_{Image_Count}_{int(speed)}_{int(steering_angle)}.png"
+        print("filename: ", filename)
         path = os.path.join(New_Image_Save_Path, filename)
         cv2.imwrite(path, cv2.cvtColor(processed_img, cv2.COLOR_RGB2BGR))
         Image_Count += 1
@@ -98,7 +107,7 @@ def main():
         k = KEYGet()
         if k == KEY1:
             LCDMenu("Manual Control", " ", " ", "Exit")
-            LCDSetPrintf(18, 0, "Manual Drive")
+            print("Manual Drive")
             pygame.init()
             pygame.font.init()
             pygame.display.set_mode((400, 100))
@@ -116,7 +125,7 @@ def main():
                 if k == KEY4:
                     End_FPS = time.time()
                     FPS = float(Iterations / (End_FPS - Start_FPS))
-                    LCDSetPrintf(18, 30, 'Frames/Second : %.2f' % (FPS))
+                    print(f'Frames/Second : %.2f' % (FPS))
                     break
         elif k == KEY4:
             done = 1

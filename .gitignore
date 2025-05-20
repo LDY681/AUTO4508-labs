@@ -1,3 +1,5 @@
 # Ignore docs and eyesimX folder
 docs/
 eyesimX/
+/lab8/ImageDatasets
+/lab8/runs
